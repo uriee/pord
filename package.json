@@ -1,0 +1,21 @@
+{
+  "name": "getp",
+  "version": "0.0.1",
+  "description": "serves part's data from the priority database.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mssql",
+    "express"
+  ],
+  "author": "uri even ezra",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.13.1",
+    "ejs": "^2.5.5",
+    "express": "^4.13.0",
+    "mssql": "^2.1.6"
+  }
+}
