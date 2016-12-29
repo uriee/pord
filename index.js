@@ -11,10 +11,10 @@ app.set('view engine', 'html');app.engine('html', require('ejs').renderFile);
 var bodyParser = require('body-parser');
  
 var config = {
-    user: '',
-    password: '',
-    server: '', 
-    database: ''
+    user: 'tabula',
+    password: 'Manager1',
+    server: '192.168.7.199\\PRI', 
+    database: 'silrd'
 }
 
 server = 'http://192.168.7.223:4000/upadateordi';
@@ -37,9 +37,8 @@ router.route('/alerts/:sup')
     res.render("index.html",{sup : req.params.sup});
 });
 
-router.route('/updateordi/:ordi/:action')
+router.route('/approve/:ordi/')
     .get(function(req, res) {
-        console.log("in",req.params.ordi,req.params.action);
 
         sql.connect(config, function(err) {
             if(err){
@@ -47,13 +46,8 @@ router.route('/updateordi/:ordi/:action')
                 return;
             }
             if(!req.params.ordi) return res.send(err);
-            var status = '';
-            if (req.params.action == 'R') status = 'R';
-            if (req.params.action == 'A') status = 'A';    
             var request = new sql.Request();        
-            Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS = '"+status+"' WHERE ORDI = "+req.params.ordi+';'
-            /*Q = 'SELECT DISTINCT SUPSTATUS FROM SIL_PORDERITEMS;'*/
-            console.log(status,Q);
+            Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS = 'A' WHERE ORDI = "+req.params.ordi+';'
             request.query(Q).then(function(recordset) {
                 console.log(request.rowsAffected,Q);
                 res.set('Access-Control-Allow-Origin', '*');
@@ -62,6 +56,28 @@ router.route('/updateordi/:ordi/:action')
             );
         });
     });
+
+router.route('/reject/:ordi/:text')
+    .get(function(req, res) {
+
+        sql.connect(config, function(err) {
+            if(err){
+                console.log("Connection Error: "+err);
+                return;
+            }
+            if(!req.params.ordi) return res.send(err);
+  
+            var request = new sql.Request();        
+            Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS='R',TEXT2='"+req.params.text+"' WHERE ORDI = "+req.params.ordi+';'
+
+            request.query(Q).then(function(recordset) {
+                console.log(request.rowsAffected,Q);
+                res.set('Access-Control-Allow-Origin', '*');
+                res.json({UPDATE : 1,row : request,rs : recordset});
+            },function(err) {console.log(err);}
+            );
+        });
+    })    
 
 
 router.route('/feedback/:sup')
@@ -72,13 +88,17 @@ router.route('/feedback/:sup')
                 return;
             }
 
-            var select = 'SELECT OI.ORDI AS ORDI ,ORDNAME,LINE,PARTNAME,TBALANCE/100 AS BAL,ARRDATE ',
-                from = 'FROM PORDERITEMS OI,PORDERS O , PART P , PORDERITEMSA A ',
-                join = 'WHERE P.PART = OI.PART AND O.ORD = OI.ORD AND A.ORDI = OI.ORDI ',
-                where = 'AND O.SUP = \''+req.params.sup+'\' AND  DATEDIFF(minute,\'01-01-1988 00:00\',getdate()) + 1440 * 7 > ARRDATE ',
-                where2= 'AND OI.CLOSED <> \'C\' AND A.PORDISTATUS = 2 '
-                order = 'ORDER BY ARRDATE DESC;',
-                Q = select + from + join + where + where2 + order;
+
+            var Q1 = 'SELECT PORDERITEMS.ORDI AS ORDI ,ORDNAME,LINE,PARTNAME,TBALANCE/100 AS BAL,ARRDATE,MNFPARTNAME ',
+                Q2 = 'FROM PORDERITEMS ',
+                Q3 = 'INNER JOIN PORDERS ON PORDERS.SUP = \''+req.params.sup+'\' ',
+                Q4 = 'INNER JOIN PART ON 1 = 1 ',
+                Q5 = 'INNER JOIN SIL_PORDERITEMS ON SIL_PORDERITEMS.ORDI = PORDERITEMS.ORDI ',
+                Q6 = 'INNER JOIN PORDERITEMSA ON PORDERITEMSA.ORDI = PORDERITEMS.ORDI ',                
+                Q7 = 'LEFT OUTER JOIN PARTMNF ON PARTMNF.MNF = SIL_PORDERITEMS.INTDATA4 AND PARTMNF.PART = PART.PART ',
+                Q8 = 'WHERE PORDERITEMS.PART = PART.PART AND PORDERITEMS.ORD = PORDERS.ORD AND PORDERITEMS.CLOSED <> \'C\' ',
+                Q9 = 'AND DATEDIFF(minute,\'01-01-1988 00:00\',getdate()) + 1440 * 7 > ARRDATE AND PORDERITEMSA.PORDISTATUS = 2;',
+                Q = Q1+Q2+Q3+Q4+Q5+Q6+Q7+Q8+Q9;
 
             var request = new sql.Request();
             request.query(Q).then(function(recordset,err) {
