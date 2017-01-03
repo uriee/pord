@@ -49,7 +49,6 @@ router.route('/approve/:ordi/')
             var request = new sql.Request();        
             Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS = 'A' WHERE ORDI = "+req.params.ordi+';'
             request.query(Q).then(function(recordset) {
-                console.log(request.rowsAffected,Q);
                 res.set('Access-Control-Allow-Origin', '*');
                 res.json({UPDATE : 1,row : request,rs : recordset});
             },function(err) {console.log(err);}
@@ -57,7 +56,7 @@ router.route('/approve/:ordi/')
         });
     });
 
-router.route('/reject/:ordi/:text')
+router.route('/reject/:ordi/:text/:date')
     .get(function(req, res) {
 
         sql.connect(config, function(err) {
@@ -66,9 +65,8 @@ router.route('/reject/:ordi/:text')
                 return;
             }
             if(!req.params.ordi) return res.send(err);
-  
             var request = new sql.Request();        
-            Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS='R',TEXT2='"+req.params.text+"' WHERE ORDI = "+req.params.ordi+';'
+            Q = "UPDATE SIL_PORDERITEMS SET SUPSTATUS='R',TEXT2='"+req.params.text+"',SDATE = "+req.params.date+" WHERE ORDI = "+req.params.ordi+';'
 
             request.query(Q).then(function(recordset) {
                 console.log(request.rowsAffected,Q);
@@ -97,7 +95,7 @@ router.route('/feedback/:sup')
                 Q6 = 'INNER JOIN PORDERITEMSA ON PORDERITEMSA.ORDI = PORDERITEMS.ORDI ',                
                 Q7 = 'LEFT OUTER JOIN PARTMNF ON PARTMNF.MNF = SIL_PORDERITEMS.INTDATA4 AND PARTMNF.PART = PART.PART ',
                 Q8 = 'WHERE PORDERITEMS.PART = PART.PART AND PORDERITEMS.ORD = PORDERS.ORD AND PORDERITEMS.CLOSED <> \'C\' ',
-                Q9 = 'AND DATEDIFF(minute,\'01-01-1988 00:00\',getdate()) + 1440 * 7 > ARRDATE AND PORDERITEMSA.PORDISTATUS = 2;',
+                Q9 = 'AND DATEDIFF(minute,\'01-01-1988 00:00\',getdate()) + 1440 * 7 > ARRDATE AND PORDERITEMSA.PORDISTATUS = 2 AND SIL_PORDERITEMS.SUPSTATUS NOT IN(\'A\',\'R\');',
                 Q = Q1+Q2+Q3+Q4+Q5+Q6+Q7+Q8+Q9;
 
             var request = new sql.Request();
