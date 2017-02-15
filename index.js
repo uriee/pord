@@ -11,10 +11,10 @@ app.set('view engine', 'html');app.engine('html', require('ejs').renderFile);
 var bodyParser = require('body-parser');
  
 var config = {
-    user: 'tabula',
-    password: 'Manager1',
-    server: '192.168.7.199\\PRI', 
-    database: 'silrd'
+    user: '',
+    password: '',
+    server: '', 
+    database: ''
 }
 
 server = 'http://192.168.7.223:4000/upadateordi';
